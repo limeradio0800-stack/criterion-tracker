@@ -2,7 +2,7 @@ name: Monitor Criterion 24h
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0,30 * * * *'
   workflow_dispatch:
 
 jobs:
