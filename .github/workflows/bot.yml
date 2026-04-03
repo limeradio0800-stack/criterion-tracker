@@ -2,31 +2,31 @@ name: Monitor Criterion 24h
 
 on:
   schedule:
-    - cron: '0 * * * *' # Isso faz o robô rodar a cada 1 hora exata
-  workflow_dispatch: # Isso permite que você rode o robô manualmente para testar
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
   scheduled:
     runs-on: ubuntu-latest
     steps:
-      - name: Baixando os arquivos do repositório
-        uses: actions/checkout@v3
+      - name: Baixando os arquivos
+        uses: actions/checkout@v4 # Atualizado para v4
 
       - name: Preparando o Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4 # Atualizado para v4
         with:
-          node-version: '18'
+          node-version: '24' # Versão mais atual recomendada
 
-      - name: Instalando o Navegador Puppeteer
+      - name: Instalando dependências
         run: npm install puppeteer
 
       - name: Executando a captura
         run: node scraper.js
 
-      - name: Salvando os dados na planilha
+      - name: Salvando os dados
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
           git add programacao.csv
-          git commit -m "Novo filme capturado em $(date)" || echo "Sem mudanças"
+          git commit -m "Captura automatica: $(date)" || echo "Sem mudanças para salvar"
           git push
