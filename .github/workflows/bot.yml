@@ -8,25 +8,31 @@ on:
 jobs:
   scheduled:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - name: Baixando os arquivos
-        uses: actions/checkout@v4 # Atualizado para v4
-
-      - name: Preparando o Node.js
-        uses: actions/setup-node@v4 # Atualizado para v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          node-version: '24' # Versão mais atual recomendada
+          fetch-depth: 0
 
-      - name: Instalando dependências
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Deps
         run: npm install puppeteer
 
-      - name: Executando a captura
+      - name: Run
         run: node scraper.js
 
-      - name: Salvando os dados
+      - name: Save
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name "GitHub Action Bot"
-          git config --global user.email "action@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add programacao.csv
-          git commit -m "Captura automatica: $(date)" || echo "Sem mudanças para salvar"
-          git push
+          git commit -m "Captura: $(date)" || echo "Sem mudanças"
+          git push origin main
