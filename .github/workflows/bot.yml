@@ -2,37 +2,37 @@ name: Monitor Criterion 24h
 
 on:
   schedule:
+    # Roda a cada 15 minutos (00, 15, 30, 45)
     - cron: '0,15,30,45 * * * *'
-  workflow_dispatch:        # <--- ESTA LINHA É O QUE CRIA O BOTÃO
+  workflow_dispatch: # Permite que você clique no botão "Run workflow"
 
 jobs:
-  scheduled:
+  build:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    
+    permissions:
+      contents: write # IMPORTANTE: Dá permissão para o robô salvar o arquivo no seu GitHub
 
-      - name: Node
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
 
-      - name: Deps
+      - name: Install dependencies
         run: npm install puppeteer
 
-      - name: Run
+      - name: Execute Scraper
         run: node scraper.js
 
-      - name: Save
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit and Push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add programacao.csv
-          git commit -m "Captura: $(date)" || echo "Sem mudanças"
-          git push origin main
+          # O "|| exit 0" evita que o robô dê erro se não houver mudança no filme
+          git commit -m "Registro automático: $(date +'%d/%m %H:%M')" || exit 0
+          git push
