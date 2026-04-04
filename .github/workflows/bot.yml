@@ -2,17 +2,14 @@ name: Monitor Criterion 24h
 
 on:
   schedule:
-    # Roda a cada 15 minutos (00, 15, 30, 45)
     - cron: '0,15,30,45 * * * *'
-  workflow_dispatch: # Permite que você clique no botão "Run workflow"
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     permissions:
-      contents: write # IMPORTANTE: Dá permissão para o robô salvar o arquivo no seu GitHub
-
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,6 +30,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add programacao.csv
-          # O "|| exit 0" evita que o robô dê erro se não houver mudança no filme
           git commit -m "Registro automático: $(date +'%d/%m %H:%M')" || exit 0
           git push
