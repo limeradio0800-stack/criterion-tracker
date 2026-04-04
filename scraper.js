@@ -16,24 +16,36 @@ const fs = require('fs');
             const bodyText = document.body.innerText;
             const match = bodyText.match(/starts in:\s*(\d+)/i) || bodyText.match(/em:\s*(\d+)/i);
             return {
-                titulo: title,
+                titulo: title.trim(),
                 minutosRestantes: match ? parseInt(match[1]) : 0
             };
         });
 
-        // Cálculos de tempo (Horário de Brasília)
-        const agora = new Date();
-        const fim = new Date(agora.getTime() + data.minutosRestantes * 60000);
-        
-        const opcoes = { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' };
-        const hCaptura = agora.toLocaleTimeString('pt-BR', opcoes);
-        const hFim = fim.toLocaleTimeString('pt-BR', opcoes);
+        // 1. LER O ÚLTIMO FILME SALVO PARA COMPARAR
+        let ultimoFilme = "";
+        if (fs.existsSync('./programacao.csv')) {
+            const conteudo = fs.readFileSync('./programacao.csv', 'utf8').trim().split('\n');
+            const ultimaLinha = conteudo[conteudo.length - 1];
+            // Pega o que está entre as primeiras aspas
+            ultimoFilme = ultimaLinha.split('","')[0].replace(/"/g, '');
+        }
 
-        // Estrutura Simples: Titulo, Horario_Captura, Fim_Estimado
-        const linha = `"${data.titulo}","${hCaptura}","${hFim}"\n`;
+        // 2. SÓ SALVAR SE O TÍTULO FOR DIFERENTE
+        if (data.titulo !== ultimoFilme && data.titulo !== "Desconhecido") {
+            const agora = new Date();
+            const fim = new Date(agora.getTime() + data.minutosRestantes * 60000);
+            
+            const opcoes = { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' };
+            const hCaptura = agora.toLocaleTimeString('pt-BR', opcoes);
+            const hFim = fim.toLocaleTimeString('pt-BR', opcoes);
 
-        fs.appendFileSync('./programacao.csv', linha, 'utf8');
-        console.log(`✅ Sucesso: ${data.titulo} salvo.`);
+            const linha = `"${data.titulo}","${hCaptura}","${hFim}"\n`;
+
+            fs.appendFileSync('./programacao.csv', linha, 'utf8');
+            console.log(`✅ Novo filme detectado: ${data.titulo}. Salvo no CSV.`);
+        } else {
+            console.log(`ℹ️ O filme "${data.titulo}" já está registrado. Pulando...`);
+        }
 
     } catch (error) {
         console.error("Erro na captura:", error.message);
