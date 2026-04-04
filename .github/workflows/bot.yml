@@ -2,8 +2,9 @@ name: Monitor Criterion 24h
 
 on:
   schedule:
-    - cron: '0,15,30,45 * * * *'
-  workflow_dispatch:
+    # Roda exatamente de 1 em 1 hora (ex: 13:00, 14:00, 15:00...)
+    - cron: '0 * * * *'
+  workflow_dispatch: # Mantém o botão manual para emergências
 
 jobs:
   build:
@@ -30,5 +31,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add programacao.csv
-          git commit -m "Registro automático: $(date +'%d/%m %H:%M')" || exit 0
+          git commit -m "Registro horário: $(date +'%d/%m %H:%M')" || exit 0
           git push
