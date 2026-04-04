@@ -9,63 +9,34 @@ const fs = require('fs');
     const page = await browser.newPage();
     
     try {
-        // Acessa o site e espera o título carregar
-        await page.goto('https://whatsonnow.criterionchannel.com/', { 
+        // Força o carregamento de uma versão nova da página (anti-cache)
+        await page.goto('https://whatsonnow.criterionchannel.com/?t=' + Date.now(), { 
             waitUntil: 'networkidle2', 
             timeout: 60000 
         });
         
-        await page.waitForSelector('.whatson__title', { timeout: 10000 });
+        await page.waitForSelector('.whatson__title', { timeout: 20000 });
 
         const data = await page.evaluate(() => {
-            const titleEl = document.querySelector('.whatson__title');
-            const bodyText = document.body.innerText;
-            // Busca o tempo restante (ex: "starts in: 45")
-            const match = bodyText.match(/starts in:\s*(\d+)/i) || bodyText.match(/em:\s*(\d+)/i);
-            
-            return {
-                titulo: titleEl ? titleEl.innerText.trim() : "DESCONHECIDO",
-                minutosRestantes: match ? parseInt(match[1]) : 0
-            };
+            const el = document.querySelector('.whatson__title');
+            return el ? el.innerText.trim() : "DESCONHECIDO";
         });
 
-        console.log(`Título detectado: ${data.titulo}`);
-
-        if (data.titulo !== "DESCONHECIDO") {
-            // 1. Verificar se o último filme salvo é o mesmo
-            let ultimoFilme = "";
-            const arquivoPath = './programacao.csv';
-
-            if (fs.existsSync(arquivoPath)) {
-                const linhas = fs.readFileSync(arquivoPath, 'utf8').trim().split('\n');
-                if (linhas.length > 0) {
-                    const ultimaLinha = linhas[linhas.length - 1];
-                    // Extrai o título entre as primeiras aspas
-                    ultimoFilme = ultimaLinha.split('","')[0].replace(/"/g, '');
-                }
-            }
-
-            // 2. Só salvar se for um filme novo
-            if (data.titulo !== ultimoFilme) {
-                const agora = new Date();
-                const fim = new Date(agora.getTime() + data.minutosRestantes * 60000);
-                
-                const opcoes = { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' };
-                const hCaptura = agora.toLocaleTimeString('pt-BR', opcoes);
-                const hFim = fim.toLocaleTimeString('pt-BR', opcoes);
-
-                const novaLinha = `"${data.titulo}","${hCaptura}","${hFim}"\n`;
-                
-                fs.appendFileSync(arquivoPath, novaLinha, 'utf8');
-                console.log("✅ Novo filme adicionado ao CSV!");
-            } else {
-                console.log("ℹ️ O filme ainda é o mesmo. Nada foi alterado.");
-            }
-        }
+        const agora = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+        const horaBR = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
+        
+        // Escreve SEMPRE, sem verificar duplicatas
+        const novaLinha = `"${data}","${horaBR}"\n`;
+        fs.appendFileSync('./programacao.csv', novaLinha, 'utf8');
+        
+        console.log(`✅ Registro efetuado: ${data} às ${horaBR}`);
 
     } catch (error) {
-        console.error("❌ Erro fatal:", error.message);
-        process.exit(1);
+        console.error("❌ Erro na varredura:", error.message);
+        // Registra o erro no CSV para você saber que ele tentou e falhou
+        const agora = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+        const horaBR = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
+        fs.appendFileSync('./programacao.csv', `"ERRO: ${error.message}","${horaBR}"\n`, 'utf8');
     } finally {
         await browser.close();
     }
