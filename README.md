@@ -1,5 +1,3 @@
-Aqui está um modelo de README.md profissional e direto para o seu repositório. Ele explica o que o projeto faz, como a automação funciona e, principalmente, deixa um "aviso" sobre a instabilidade do agendador do GitHub, o que ajuda a manter o sistema ativo.
-
 📺 Criterion Channel 24/7 Monitor
 Este projeto é um rastreador (scraper) automatizado que monitora a programação do canal linear Criterion Channel 24/7. O objetivo é criar um histórico real dos filmes exibidos, já que o canal não oferece uma grade horária retroativa oficial.
 
