@@ -3,6 +3,7 @@ name: Monitor Criterion 24h
 on:
   schedule:
     - cron: '0,15,30,45 * * * *'
+  workflow_dispatch:        # <--- ESTA LINHA É O QUE CRIA O BOTÃO
 
 jobs:
   scheduled:
