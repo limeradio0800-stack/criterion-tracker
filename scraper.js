@@ -9,7 +9,6 @@ const fs = require('fs');
     const page = await browser.newPage();
     
     try {
-        // Anti-cache para garantir que lê o filme atualizado da hora
         await page.goto('https://whatsonnow.criterionchannel.com/?t=' + Date.now(), { 
             waitUntil: 'networkidle2', 
             timeout: 60000 
@@ -17,18 +16,21 @@ const fs = require('fs');
         
         await page.waitForSelector('.whatson__title', { timeout: 20000 });
 
-        const titulo = await page.evaluate(() => {
-            const el = document.querySelector('.whatson__title');
-            return el ? el.innerText.trim() : "DESCONHECIDO";
+        const info = await page.evaluate(() => {
+            const titulo = document.querySelector('.whatson__title')?.innerText.trim();
+            // Pega o texto que diz "ENDS IN..." ou "STARTS IN..."
+            const tempoFalta = document.querySelector('.whatson__time')?.innerText.trim(); 
+            return { titulo, tempoFalta };
         });
 
         const agora = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
         const horaBR = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
         
-        // Registo simples: Título e Hora
-        fs.appendFileSync('./programacao.csv', `"${titulo}","${horaBR}"\n`, 'utf8');
+        // Salva: "Filme", "Hora da Captura", "Quanto tempo faltava"
+        const linha = `"${info.titulo || '??'}","${horaBR}","${info.tempoFalta || 'N/A'}"\n`;
         
-        console.log(`✅ Registado às ${horaBR}: ${titulo}`);
+        fs.appendFileSync('./programacao.csv', linha, 'utf8');
+        console.log(`✅ Registrado: ${info.titulo} (${info.tempoFalta})`);
 
     } catch (error) {
         console.error("Erro:", error.message);
