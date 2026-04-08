@@ -15,17 +15,15 @@ const fs = require('fs');
             timeout: 60000 
         });
         
-        await new Promise(r => setTimeout(r, 12000));
+        await new Promise(r => setTimeout(r, 15000));
 
         const dados = await page.evaluate(() => {
             const titulo = document.querySelector('.whatson__title')?.innerText.trim() || "DESCONHECIDO";
             
-            // CAPTURA DO LINK (Botão MORE)
-            // Geralmente é um <a> com a classe 'whatson__link' ou similar
-            const linkElement = document.querySelector('a[href*="criterionchannel.com/"]');
-            const link = linkElement ? linkElement.href : "Sem Link";
+            // SELETOR AJUSTADO COM BASE NO HTML QUE VOCÊ ENVIOU
+            const linkElement = document.querySelector('a.whatson__channel-link--more');
+            const link = linkElement ? linkElement.href : "Link não encontrado";
 
-            // CAPTURA DO TEMPO
             let txt = "";
             const spans = Array.from(document.querySelectorAll('span'));
             const alvo = spans.find(s => s.innerText.toLowerCase().includes('min'));
@@ -40,11 +38,10 @@ const fs = require('fs');
         // --- GESTÃO DE TEMPO (BRASÍLIA) ---
         const agora = new Date();
         const agoraBR = new Date(agora.getTime() - (3 * 60 * 60 * 1000));
-        const dataHoje = agoraBR.getUTCFullYear() + '-' + 
-                         String(agoraBR.getUTCMonth() + 1).padStart(2, '0') + '-' + 
-                         String(agoraBR.getUTCDate()).padStart(2, '0');
-        
         const pad = (n) => n.toString().padStart(2, '0');
+        
+        // Formato solicitado: DD-MM-AAAA
+        const dataFormatada = `${pad(agoraBR.getUTCDate())}-${pad(agoraBR.getUTCMonth() + 1)}-${agoraBR.getUTCFullYear()}`;
         const horaCaptura = `${pad(agoraBR.getUTCHours())}:${pad(agoraBR.getUTCMinutes())}`;
         
         let horaTermino = "---";
@@ -53,35 +50,38 @@ const fs = require('fs');
             horaTermino = `${pad(dataTermino.getUTCHours())}:${pad(dataTermino.getUTCMinutes())}`;
         }
 
-        const novaLinha = `${dataHoje},${dados.titulo},${horaCaptura},${horaTermino},${dados.link}\n`;
+        // Criando a nova linha
+        const novaLinha = `${dataFormatada},${dados.titulo},${horaCaptura},${horaTermino},${dados.link}`;
 
         // --- LÓGICA DE LIMPEZA (24 HORAS) ---
         const arquivo = './programacao.csv';
-        let conteudoFinal = "Data,Filme,Inicio,Termino,Link\n"; // Cabeçalho
+        let conteudoFinal = "Data,Filme,Captura,Termino,Link\n"; // Cabeçalho corrigido
 
         if (fs.existsSync(arquivo)) {
             const linhas = fs.readFileSync(arquivo, 'utf8').split('\n');
             const umDiaAtras = new Date(agora.getTime() - (24 * 60 * 60 * 1000));
 
-            // Filtra linhas antigas (pula o cabeçalho)
             for (let i = 1; i < linhas.length; i++) {
-                if (!linhas[i].trim()) continue;
+                if (!linhas[i].trim() || linhas[i].startsWith('Data')) continue;
                 
                 const colunas = linhas[i].split(',');
-                const dataRegistro = new Date(colunas[0] + 'T' + colunas[2] + ':00Z'); // Tenta reconstruir a data
+                if (colunas.length < 3) continue;
+
+                // Reconstroi a data DD-MM-AAAA para o motor de comparação
+                const parts = colunas[0].split('-');
+                const dataIso = `${parts[2]}-${parts[1]}-${parts[0]}T${colunas[2]}:00Z`;
+                const dataRegistro = new Date(dataIso);
                 
-                // Se o registro for mais novo que 24h, mantém
                 if (dataRegistro > umDiaAtras) {
                     conteudoFinal += linhas[i] + '\n';
                 }
             }
         }
 
-        // Adiciona a nova captura e salva (sobrescrevendo o arquivo com a lista limpa)
-        conteudoFinal += novaLinha;
+        conteudoFinal += novaLinha + '\n';
         fs.writeFileSync(arquivo, conteudoFinal, 'utf8');
 
-        console.log(`✅ Adicionado: ${dados.titulo} | Link: ${dados.link}`);
+        console.log(`✅ Salvo: ${dados.titulo} | Link: ${dados.link}`);
 
     } catch (e) {
         console.error("Erro:", e.message);
